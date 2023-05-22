@@ -167,6 +167,7 @@ export default function ChatPage() {
 
     const userId = sessionStorage.getItem('_id');
     const sessionToken = sessionStorage.getItem('token');
+    const name = sessionStorage.getItem('name');
 
     const messageInput = document.querySelector('#message-input');
 
@@ -183,6 +184,7 @@ export default function ChatPage() {
 
       socket.emit('chat_message', {
         token: sessionToken,
+        name,
         ...messageObject
       });
 
@@ -194,16 +196,15 @@ export default function ChatPage() {
     }
   }
 
-  function chatMessage(data) {
+  const chatMessage = data => {
 
     const userId = sessionStorage.getItem('_id');
-    const name = sessionStorage.getItem('name');
 
     const isMine = data.user === userId;
 
     const messageObject = {
       chat: data.chat,
-      name: isMine ? name : chat?.name,
+      name: chat?.name,
       user: data.user,
       message: data.message,
       createdAt: data.createdAt,
