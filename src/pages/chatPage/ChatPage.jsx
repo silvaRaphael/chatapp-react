@@ -204,7 +204,7 @@ export default function ChatPage() {
 
     const messageObject = {
       chat: data.chat,
-      name: chat?.name,
+      name: data.name,
       user: data.user,
       message: data.message,
       createdAt: data.createdAt,
