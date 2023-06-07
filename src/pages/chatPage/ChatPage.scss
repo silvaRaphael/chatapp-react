@@ -134,6 +134,14 @@
           }
         }
       }
+
+      & > #span-my-id {
+        position: absolute;
+        left: .5rem;
+        bottom: .25rem;
+        font-size: .65rem;
+        font-weight: bold;
+      }
     }
   }
 

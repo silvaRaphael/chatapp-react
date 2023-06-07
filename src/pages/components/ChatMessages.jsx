@@ -46,7 +46,7 @@ const ChatMessages = ({ chat, messages, sendMessage, firstLoadMessages }) => {
                     <span className="name">{item.name}</span>
                     <span className="time">{new Date(item.createdAt).toLocaleTimeString().slice(0, 5)}</span>
                   </div>
-                  <div className="content">{item.message}</div>
+                  <div className="content">{item.content}</div>
                 </div>
               </div>
             )

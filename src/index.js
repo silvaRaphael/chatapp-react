@@ -16,31 +16,36 @@ const App = () => {
   const [logged, setLogged] = useState(false);
 
   const authContext = useMemo(() => ({
-    validToken: async () => {
+    verifyToken: async () => {
 
+      const userId = sessionStorage.getItem('id');
       const sessionToken = sessionStorage.getItem('token');
 
-      if (sessionToken) {
+      if (sessionToken && userId) {
         try {
-          const authReq = await fetch(API_URL + '/auth/valid', {
-            method: 'POST',
+          const authReq = await fetch(API_URL + '/users/' + userId, {
+            method: 'GET',
             headers: {
-              'content-type': 'application/json'
+              'content-type': 'application/json',
+              'authorization': `Bearer ${sessionToken}`,
             },
-            body: JSON.stringify({ token: sessionToken })
           });
 
           const res = await authReq.json();
 
           if (!authReq.ok) {
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('id');
+            sessionStorage.removeItem('name');
+            sessionStorage.removeItem('email');
+
             setLoading(false);
             return alert(res.message);
           }
 
-          const { token, _id, name, email } = res;
+          const { id, name, email } = res;
 
-          sessionStorage.setItem('token', token);
-          sessionStorage.setItem('_id', _id);
+          sessionStorage.setItem('id', id);
           sessionStorage.setItem('name', name);
           sessionStorage.setItem('email', email);
 
@@ -50,6 +55,11 @@ const App = () => {
           console.log(err.message);
         }
       }
+
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('id');
+      sessionStorage.removeItem('name');
+      sessionStorage.removeItem('email');
 
       setLoading(false);
       return setLogged(false);
@@ -82,10 +92,10 @@ const App = () => {
         if (!loginReq.ok)
           return alert(res.message);
 
-        const { token, _id, name, email } = res;
+        const { token, id, name, email } = res;
 
         sessionStorage.setItem('token', token);
-        sessionStorage.setItem('_id', _id);
+        sessionStorage.setItem('id', id);
         sessionStorage.setItem('name', name);
         sessionStorage.setItem('email', email);
 
@@ -130,10 +140,10 @@ const App = () => {
         if (!registerReq.ok)
           return alert(res.message);
 
-        const { token, _id, name, email } = res;
+        const { token, id, name, email } = res;
 
         sessionStorage.setItem('token', token);
-        sessionStorage.setItem('_id', _id);
+        sessionStorage.setItem('id', id);
         sessionStorage.setItem('name', name);
         sessionStorage.setItem('email', email);
 
@@ -146,7 +156,7 @@ const App = () => {
     },
     signOut: () => {
       sessionStorage.removeItem('token');
-      sessionStorage.removeItem('_id');
+      sessionStorage.removeItem('id');
       sessionStorage.removeItem('name');
       sessionStorage.removeItem('email');
 
@@ -155,7 +165,7 @@ const App = () => {
   }), []);
 
   useEffect(() => {
-    authContext.validToken();
+    authContext.verifyToken();
   }, [authContext]);
 
   return (

@@ -9,7 +9,9 @@ const socket = io(API_URL);
 
 export default function ChatPage() {
 
-  const { validToken, signOut } = useContext(AuthContext);
+  const userId = sessionStorage.getItem('id');
+  
+  const { signOut } = useContext(AuthContext);
 
   const [chats, setChats] = useState([]);
   const [chat, setChat] = useState(null);
@@ -21,30 +23,28 @@ export default function ChatPage() {
     const ev = e || window.event;
     ev.preventDefault();
 
-    const userId = sessionStorage.getItem('_id');
     const sessionToken = sessionStorage.getItem('token');
-    const otherUserId = document.querySelector('#user-input').value;
+    const user = document.querySelector('#user-input').value;
 
-    if(!otherUserId)
+    if(!user)
       return false;
 
     try {
-      const chatsReq = await fetch(API_URL + '/chats/', {
+      const chatsReq = await fetch(API_URL + '/chats', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
           'authorization': 'Bearer ' + sessionToken,
         },
-        body: JSON.stringify({
-          userId,
-          otherUserId
-        })
+        body: JSON.stringify({ user })
       });
 
       const res = await chatsReq.json();
 
       if (!chatsReq.ok)
         return alert(res.message);
+
+      user.value = '';
 
       getChats();
     } catch (err) {
@@ -54,17 +54,16 @@ export default function ChatPage() {
   
   const getChats = async () => {
 
-    const userId = sessionStorage.getItem('_id');
+    const userId = sessionStorage.getItem('id');
     const sessionToken = sessionStorage.getItem('token');
     
     if(!userId || !sessionToken)
       return alert('ID e TOKEN são inválidos!');
 
     try {
-      const chatsReq = await fetch(API_URL + '/chats/' + userId, {
+      const chatsReq = await fetch(API_URL + '/chats', {
         method: 'GET',
         headers: {
-          
           'content-type': 'application/json',
           'authorization': 'Bearer ' + sessionToken,
         }
@@ -72,14 +71,17 @@ export default function ChatPage() {
 
       const res = await chatsReq.json();
 
-      if (!chatsReq.ok)
+      if (!chatsReq.ok) {
+        console.log(sessionToken)
+        if(chatsReq.status === 401) return signOut();
         return alert(res.message);
+      }
 
       const chats = res.map(item => {
 
-        const { _id: chat, updatedAt, users } = item;
+        const { id: chat, updatedAt, users } = item;
 
-        const [{ name }] = users.filter(item => item._id !== userId);
+        const [{ name }] = users.filter(item => item.id !== userId);
 
         const chatObject = {
           chat,
@@ -98,7 +100,7 @@ export default function ChatPage() {
 
   const selectChat = (item) => {
 
-    const userId = sessionStorage.getItem('_id');
+    const userId = sessionStorage.getItem('id');
 
     socket.emit('select_chat', {
       prevChat: chat?.chat,
@@ -112,7 +114,7 @@ export default function ChatPage() {
 
   const getMessages = async ({ chat, name }) => {
 
-    const userId = sessionStorage.getItem('_id');
+    const userId = sessionStorage.getItem('id');
     const sessionToken = sessionStorage.getItem('token');
 
     try {
@@ -131,16 +133,16 @@ export default function ChatPage() {
 
       const messages = res.map(item => {
 
-        const { chat, createdAt, user, message } = item;
+        const { chat, createdAt, user, content } = item;
 
-        const { _id: senderId, name } = user;
+        const { id: senderId, name } = user;
 
         const isMine = userId === senderId;
 
         const messageObject = {
           chat,
           name,
-          message,
+          content,
           createdAt,
           isMine
         };
@@ -165,9 +167,8 @@ export default function ChatPage() {
     const ev = e || window.event;
     ev.preventDefault();
 
-    const userId = sessionStorage.getItem('_id');
+    const userId = sessionStorage.getItem('id');
     const sessionToken = sessionStorage.getItem('token');
-    const name = sessionStorage.getItem('name');
 
     const messageInput = document.querySelector('#message-input');
 
@@ -178,13 +179,11 @@ export default function ChatPage() {
       const messageObject = {
         chat: chat.chat,
         user: userId,
-        message: messageInput.value,
-        createdAt: new Date().toISOString()
+        content: messageInput.value,
       };
 
       socket.emit('chat_message', {
         token: sessionToken,
-        name,
         ...messageObject
       });
 
@@ -198,7 +197,9 @@ export default function ChatPage() {
 
   const chatMessage = data => {
 
-    const userId = sessionStorage.getItem('_id');
+    console.log(data)
+
+    const userId = sessionStorage.getItem('id');
 
     const isMine = data.user === userId;
 
@@ -206,7 +207,7 @@ export default function ChatPage() {
       chat: data.chat,
       name: data.name,
       user: data.user,
-      message: data.message,
+      content: data.content,
       createdAt: data.createdAt,
       isMine: isMine
     };
@@ -219,8 +220,6 @@ export default function ChatPage() {
   useEffect(() => {
 
     socket.on('chat_message', chatMessage);
-
-    validToken();
 
     getChats();
 
@@ -263,6 +262,7 @@ export default function ChatPage() {
               <span className="material-symbols-outlined">add</span>
             </button>
           </form>
+          <span id="span-my-id">Meu ID: {userId}</span>
         </div>
       </div>
       <div className="messages-container">
